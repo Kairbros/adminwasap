@@ -772,6 +772,7 @@ class SessionManager extends EventEmitter {
 
         // Desconectado
         client.on('disconnected', async (reason) => {
+            console.log(`🔔 [DEBUG] Evento 'disconnected' recibido para ${sessionId}, reason: ${reason}`);
             if (session.status === 'disconnected') return; // Prevent duplicate
 
             session.status = 'disconnected';
