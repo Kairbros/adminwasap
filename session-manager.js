@@ -1273,6 +1273,30 @@ class SessionManager extends EventEmitter {
                 return session._cachedChats;
             } catch (err) {
                 console.error(`❌ getChats attempt ${attempt} failed for ${sessionId}:`, err.message);
+
+                // Detectar desconexión silenciosa (whatsapp-web.js no emitió evento 'disconnected')
+                const isDisconnectError = err.message.includes('Cannot read properties of undefined') ||
+                                          err.message.includes('Execution context was destroyed') ||
+                                          err.message.includes('Protocol error');
+
+                if (isDisconnectError && session.status === 'connected' && attempt === 2) {
+                    console.log(`🔔 [AUTO-DETECT] Desconexión silenciosa detectada para ${sessionId}`);
+                    session.status = 'disconnected';
+                    session.reason = 'LOGOUT';
+                    this.io.emit('disconnected', { sessionId, reason: 'LOGOUT' });
+                    this.io.emit('session_update', this._getSessionInfo(sessionId));
+
+                    // Emitir evento para enviar correo
+                    if ((session.phone || session.name) && !this.isShuttingDown) {
+                        this.emit('session_disconnected', {
+                            sessionId,
+                            phone: session.phone || 'Desconocido',
+                            name: session.name || sessionId,
+                            reason: 'LOGOUT'
+                        });
+                    }
+                }
+
                 if (attempt < 2) {
                     console.log(`🔁 Retrying in 3 seconds...`);
                     await new Promise(r => setTimeout(r, 3000));
