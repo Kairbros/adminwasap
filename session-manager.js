@@ -961,7 +961,7 @@ class SessionManager extends EventEmitter {
                 // Fallback combinando data disponible antes y después de revocación
                 const srcMsg = after || before || {};
                 const extracted = this._extractMessageData(srcMsg, stored);
-                const originalBody = (before && before.body) ? before.body : extracted.body;
+                const originalBody = (before && before.body) ? before.body : (extracted.body || (stored ? stored.body : '') || '');
 
                 // Verificamos si en BD o Cache sabíamos que esto tenía Media
                 let hasMediaFlag = before ? before.hasMedia : extracted.hasMedia;
@@ -1350,19 +1350,19 @@ class SessionManager extends EventEmitter {
 
                 result.push({
                     id: msgId,
-                    body: extracted.body,
+                    body: extracted.body || (stored ? stored.body : '') || '',
                     from: msg.from,
                     to: msg.to,
                     timestamp: msg.timestamp,
                     fromMe: msg.fromMe,
-                    type: extracted.type,
+                    type: extracted.type || (stored && stored.type) || msg.type || 'chat',
                     hasMedia: extracted.hasMedia,
                     isViewOnce: extracted.isViewOnce || msg.isViewOnce || !!(msg._data && (msg._data.isViewOnce || msg._data.viewOnce)) || (stored ? stored.isViewOnce : false) || (revoked ? revoked.isViewOnce : false),
                     pollOptions: extracted.pollOptions,
                     pollVotes: stored ? (stored.pollVotes || []) : [],
                     revoked: !!revoked,
                     revokeType: revoked ? revoked.revokeType : undefined,
-                    originalBody: revoked ? revoked.body : undefined,
+                    originalBody: revoked ? (revoked.body || (stored ? stored.body : '') || '') : undefined,
                     author: authorId,
                     authorName: storedName || null,
                     mentionedIds: msg.mentionedIds || (stored ? stored.mentionedIds : []) || []
@@ -1404,9 +1404,11 @@ class SessionManager extends EventEmitter {
                 const belongsToChat = (revokedData.chatId === chatId || revokedData.from === chatId || revokedData.to === chatId);
                 if (!belongsToChat) continue;
 
+                const storedFallback = messageStore[msgId];
+                const finalBody = revokedData.body || (storedFallback ? storedFallback.body : '') || '';
                 result.push({
                     id: msgId,
-                    body: revokedData.body,
+                    body: finalBody,
                     from: revokedData.from,
                     to: revokedData.to,
                     timestamp: revokedData.timestamp,
@@ -1416,7 +1418,7 @@ class SessionManager extends EventEmitter {
                     isViewOnce: !!revokedData.isViewOnce,
                     revoked: true,
                     revokeType: revokedData.revokeType,
-                    originalBody: revokedData.body,
+                    originalBody: finalBody,
                     author: revokedData.author || null,
                     authorName: revokedData.authorName || null,
                     mentionedIds: revokedData.mentionedIds || []

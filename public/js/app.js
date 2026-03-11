@@ -752,8 +752,14 @@ function renderMessages(messages) {
                             // Es un mensaje temporal (view once) expirado
                             body = `<div class="view-once" style="font-weight:bold; color:#00a884; font-style:italic;">🔒 Mensaje temporal</div>`;
                         } else {
-                            // Fue eliminado mientras la sesión estaba cerrada
-                            body = `<div class="view-once" style="font-weight:normal; color:#667781; font-style:italic;">🚫 Mensaje eliminado (sesión cerrada)</div>`;
+                            // Tipos que por diseño no tienen body de texto (reacciones, sync, cifrado, etc.)
+                            const silentTypes = ['reaction','ephemeral_sync','ciphertext','notification_template','broadcast_notification'];
+                            if (silentTypes.includes(msg.type)) {
+                                body = `<div class="msg-file" style="text-align:center; font-style:italic; color:#667781;">🔔 Notificación del sistema</div>`;
+                            } else {
+                                // Body vacío sin razón conocida: puede ser un mensaje en sincronización o formato no soportado
+                                body = `<div class="view-once" style="font-weight:normal; color:#667781; font-style:italic;">⌛ Contenido no disponible (tipo: ${msg.type || 'desconocido'})</div>`;
+                            }
                         }
                     }
                 } else {
@@ -874,8 +880,14 @@ function appendMessage(message) {
                         // Es un mensaje temporal (view once) expirado
                         body = `<div class="view-once" style="font-weight:bold; color:#00a884; font-style:italic;">🔒 Mensaje temporal</div>`;
                     } else {
-                        // Fue eliminado mientras la sesión estaba cerrada
-                        body = `<div class="view-once" style="font-weight:normal; color:#667781; font-style:italic;">🚫 Mensaje eliminado (sesión cerrada)</div>`;
+                        // Tipos que por diseño no tienen body de texto (reacciones, sync, cifrado, etc.)
+                        const silentTypes = ['reaction','ephemeral_sync','ciphertext','notification_template','broadcast_notification'];
+                        if (silentTypes.includes(message.type)) {
+                            body = `<div class="msg-file" style="text-align:center; font-style:italic; color:#667781;">🔔 Notificación del sistema</div>`;
+                        } else {
+                            // Body vacío sin razón conocida: puede ser un mensaje en sincronización o formato no soportado
+                            body = `<div class="view-once" style="font-weight:normal; color:#667781; font-style:italic;">⌛ Contenido no disponible (tipo: ${message.type || 'desconocido'})</div>`;
+                        }
                     }
                 }
             } else {
